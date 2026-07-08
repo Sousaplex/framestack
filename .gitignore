@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist-electron/
+out/
+release/
+dist/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
