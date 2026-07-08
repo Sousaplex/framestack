@@ -1,4 +1,4 @@
-import { ImageSequenceInfo, VideoFormat, RenderJob, RenderProgress, DirectoryInfo } from '@shared/types'
+import { ImageSequenceInfo, VideoFormat, RenderJob, RenderProgress, DirectoryInfo, ExtractionProgress } from '@shared/types'
 
 declare global {
   interface Window {
@@ -30,7 +30,7 @@ declare global {
       browseFFmpegPath: () => Promise<string | null>
       onRenderProgress: (callback: (jobId: string, progress: RenderProgress) => void) => void
       removeRenderProgressListener: () => void
-      onExtractionProgress: (callback: (progress: any) => void) => void
+      onExtractionProgress: (callback: (progress: ExtractionProgress) => void) => void
       removeExtractionProgressListener: () => void
       getDownloadsFolder: () => Promise<string>
       getPreferredOutputFolder: () => Promise<string>

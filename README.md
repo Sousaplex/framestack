@@ -1,6 +1,6 @@
-# Seq2Vid - Image Sequence Renderer
+# FrameStack - Image Sequence Renderer
 
-An Electron application for converting image sequences to high-quality video formats using FFmpeg.
+A Tauri application for converting image sequences to high-quality video formats using FFmpeg.
 
 ## Features
 
@@ -20,22 +20,23 @@ An Electron application for converting image sequences to high-quality video for
   - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
 
 - **Node.js**: Version 18 or higher
+- **Rust**: Required by Tauri. Install via [rustup.rs](https://rustup.rs/)
 
 ## Installation
 
 1. Install dependencies:
 ```bash
-npm install
+pnpm install
 ```
 
 2. Start development server:
 ```bash
-npm run dev
+pnpm tauri dev
 ```
 
 3. Build for production:
 ```bash
-npm run build
+pnpm tauri build
 ```
 
 ## Usage
@@ -69,35 +70,42 @@ npm run build
 ## Project Structure
 
 ```
-seq2vid/
+framestack/
 ├── src/
-│   ├── main/              # Electron main process
-│   │   ├── index.ts       # Main entry point and IPC handlers
-│   │   ├── ffmpeg.ts      # FFmpeg wrapper and format configs
-│   │   └── store.ts       # Job history storage
-│   ├── preload/           # Preload scripts
-│   │   └── index.ts       # Expose safe APIs to renderer
 │   ├── renderer/          # React UI
 │   │   ├── App.tsx        # Main app component
 │   │   ├── components/    # UI components
 │   │   ├── hooks/         # React hooks
+│   │   ├── api.ts         # Tauri API wrapper
 │   │   └── utils/         # Utility functions
 │   └── shared/            # Shared types and constants
 │       ├── types.ts       # TypeScript types
 │       └── formats.ts     # Video format definitions
+├── src-tauri/             # Rust backend
+│   ├── src/
+│   │   ├── main.rs        # Application entry
+│   │   ├── lib.rs         # Tauri setup and commands
+│   │   ├── commands.rs    # Tauri command handlers
+│   │   ├── ffmpeg.rs      # FFmpeg discovery and rendering
+│   │   ├── sequence.rs    # Sequence detection
+│   │   ├── zip_extract.rs # ZIP extraction
+│   │   └── store.rs       # Persistent storage
+│   ├── capabilities/      # Tauri permissions
+│   ├── icons/             # App icons
+│   └── tauri.conf.json    # Tauri configuration
 ├── package.json
-├── electron.vite.config.ts
+├── vite.config.ts
 └── tailwind.config.js
 ```
 
 ## Development
 
 The app uses:
-- **Electron** with **Vite** for fast development
-- **React** for the UI
+- **Tauri** with a Rust backend
+- **React** with **Vite** for the UI
 - **Tailwind CSS 3** for styling
 - **Lucide React** for icons
-- **Electron Store** for persistent job history
+- Persistent storage backed by a JSON file in the app data directory
 
 ## License
 

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { ImageSequenceInfo, ExtractionProgress } from '@shared/types'
 import { FolderOpen, Image as ImageIcon, CheckCircle2, Loader2, Folder, Archive, Upload } from 'lucide-react'
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 interface FilePickerProps {
   onSequenceSelected: (info: ImageSequenceInfo | null) => void
@@ -14,21 +15,6 @@ export default function FilePicker({ onSequenceSelected, sequenceInfo }: FilePic
   const [isDragging, setIsDragging] = useState(false)
   const [extractionProgress, setExtractionProgress] = useState<ExtractionProgress | null>(null)
   const dropzoneRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    // Set up extraction progress listener
-    if (window.electronAPI && window.electronAPI.onExtractionProgress) {
-      window.electronAPI.onExtractionProgress((progress) => {
-        setExtractionProgress(progress)
-      })
-    }
-
-    return () => {
-      if (window.electronAPI && window.electronAPI.removeExtractionProgressListener) {
-        window.electronAPI.removeExtractionProgressListener()
-      }
-    }
-  }, [])
 
   const processFiles = useCallback(async (filePaths: string[]) => {
     if (filePaths.length === 0) return
@@ -61,6 +47,64 @@ export default function FilePicker({ onSequenceSelected, sequenceInfo }: FilePic
       setLoading(false)
     }
   }, [onSequenceSelected])
+
+  const loadingRef = useRef(loading)
+  const processFilesRef = useRef(processFiles)
+
+  useEffect(() => {
+    loadingRef.current = loading
+  }, [loading])
+
+  useEffect(() => {
+    processFilesRef.current = processFiles
+  }, [processFiles])
+
+  useEffect(() => {
+    // Set up extraction progress listener
+    if (window.electronAPI && window.electronAPI.onExtractionProgress) {
+      window.electronAPI.onExtractionProgress((progress) => {
+        setExtractionProgress(progress)
+      })
+    }
+
+    // Set up Tauri drag-drop listener
+    const webviewWindow = getCurrentWebviewWindow()
+    let unlisten: (() => void) | null = null
+
+    webviewWindow.onDragDropEvent((event) => {
+      const payload = event.payload as {
+        type: 'drop' | 'over' | 'leave'
+        paths?: string[]
+        position?: { x: number; y: number }
+      }
+
+      switch (payload.type) {
+        case 'over':
+          setIsDragging(true)
+          break
+        case 'leave':
+          setIsDragging(false)
+          break
+        case 'drop':
+          setIsDragging(false)
+          if (payload.paths && payload.paths.length > 0 && !loadingRef.current) {
+            processFilesRef.current(payload.paths)
+          }
+          break
+      }
+    }).then((fn) => {
+      unlisten = fn
+    })
+
+    return () => {
+      if (window.electronAPI && window.electronAPI.removeExtractionProgressListener) {
+        window.electronAPI.removeExtractionProgressListener()
+      }
+      if (unlisten) {
+        unlisten()
+      }
+    }
+  }, [])
 
   const handleSelectFiles = async () => {
     try {
@@ -185,173 +229,12 @@ export default function FilePicker({ onSequenceSelected, sequenceInfo }: FilePic
     }
   }
 
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(true)
-  }, [])
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }, [])
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }, [])
-
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-
-    if (loading) return
-
-      try {
-        setLoading(true)
-        setError(null)
-        setExtractionProgress(null)
-
-        const items = Array.from(e.dataTransfer.items)
-        const filePaths: string[] = []
-
-        // Extract file paths from dropped items
-        // In Electron, we can access the file path directly
-        for (const item of items) {
-          if (item.kind === 'file') {
-            const file = item.getAsFile()
-            if (file) {
-              // In Electron, File objects have a path property with the full file path
-              const path = (file as any).path
-              if (path) {
-                filePaths.push(path)
-              } else {
-                // Fallback: try to get path from webkitRelativePath or name
-                const webkitPath = (file as any).webkitRelativePath
-                if (webkitPath) {
-                  filePaths.push(webkitPath)
-                }
-              }
-            }
-          }
-        }
-
-        // Also check dataTransfer.files for direct file access
-        if (filePaths.length === 0 && e.dataTransfer.files.length > 0) {
-          for (let i = 0; i < e.dataTransfer.files.length; i++) {
-            const file = e.dataTransfer.files[i]
-            const path = (file as any).path
-            if (path) {
-              filePaths.push(path)
-            }
-          }
-        }
-
-        if (filePaths.length === 0) {
-          setError('No files detected. Please try selecting files manually.')
-          setLoading(false)
-          return
-        }
-
-        // Check if all dropped files are zip files
-        const allZips = filePaths.every(path => path.toLowerCase().endsWith('.zip'))
-        const firstPath = filePaths[0]
-
-        // Set up progress listener for zip extraction
-        if (allZips && window.electronAPI.onExtractionProgress) {
-          window.electronAPI.onExtractionProgress((progress) => {
-            setExtractionProgress(progress)
-          })
-        }
-
-        // Process dropped files (handles zip, folder, or regular files)
-        let imageFiles: string[] = []
-        
-        try {
-          // If we have an existing sequence and dropping zips, use existing directory
-          const existingTempDir = sequenceInfo?.directory
-          
-          // Check if processDroppedFiles is available, otherwise use fallback
-          if (window.electronAPI && typeof window.electronAPI.processDroppedFiles === 'function') {
-            imageFiles = await window.electronAPI.processDroppedFiles(filePaths, existingTempDir)
-          } else {
-            // Fallback: check file types and process accordingly
-            if (allZips) {
-              // Extract all zip files
-              const zipPaths = filePaths.filter(path => path.toLowerCase().endsWith('.zip'))
-              imageFiles = await window.electronAPI.extractAndDetectZip(
-                zipPaths.length > 1 ? zipPaths : zipPaths[0],
-                existingTempDir
-              )
-            } else {
-              // Check if it's a folder by trying to detect sequence from folder
-              try {
-                imageFiles = await window.electronAPI.detectSequenceFromFolder(firstPath)
-              } catch {
-                // Assume regular image files
-                const imageExtensions = ['.png', '.jpg', '.jpeg', '.tiff', '.tif', '.exr', '.dpx']
-                imageFiles = filePaths.filter(path => {
-                  const ext = path.toLowerCase().match(/\.[^.]+$/)
-                  return ext && imageExtensions.includes(ext[0])
-                })
-              }
-            }
-          }
-          
-          // If we had an existing sequence and dropped zips, merge the files
-          if (sequenceInfo && existingTempDir && allZips && imageFiles.length > 0) {
-            const allFiles = [...(sequenceInfo.files || []), ...imageFiles]
-            const info = await window.electronAPI.detectSequenceInfo(allFiles)
-            onSequenceSelected(info)
-            setLoading(false)
-            return
-          }
-        } catch (processError: any) {
-          console.error('Error processing dropped files:', processError)
-          // Try direct detection as fallback
-          const imageExtensions = ['.png', '.jpg', '.jpeg', '.tiff', '.tif', '.exr', '.dpx']
-          imageFiles = filePaths.filter(path => {
-            const ext = path.toLowerCase().match(/\.[^.]+$/)
-            return ext && imageExtensions.includes(ext[0])
-          })
-        } finally {
-          // Clear progress listener
-          setExtractionProgress(null)
-          if (window.electronAPI.removeExtractionProgressListener) {
-            window.electronAPI.removeExtractionProgressListener()
-          }
-        }
-        
-        if (imageFiles.length === 0) {
-          throw new Error('No image files found in dropped items')
-        }
-
-        const info = await window.electronAPI.detectSequenceInfo(imageFiles)
-        onSequenceSelected(info)
-      } catch (err: any) {
-        setExtractionProgress(null)
-        if (window.electronAPI.removeExtractionProgressListener) {
-          window.electronAPI.removeExtractionProgressListener()
-        }
-        setError(err.message || 'Failed to process dropped files')
-        onSequenceSelected(null)
-      } finally {
-        setLoading(false)
-      }
-  }, [loading, onSequenceSelected])
-
   return (
-    <div 
+    <div
       ref={dropzoneRef}
       className={`glass rounded-2xl p-6 h-full flex flex-col transition-all ${
         isDragging ? 'border-2 border-blue-400 bg-blue-500/10' : ''
       }`}
-      onDragEnter={handleDragEnter}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
     >
       <div className="flex items-start gap-4 mb-4">
         <div className="flex-shrink-0">

@@ -8,7 +8,7 @@ This error occurs because the app isn't code signed. macOS Gatekeeper blocks uns
 
 Tell your friend to:
 
-1. **Right-click** the `Seq2Vid.app` file (or Control+Click)
+1. **Right-click** the `FrameStack.app` file (or Control+Click)
 2. Select **"Open"** from the context menu
 3. Click **"Open"** in the security dialog
 
@@ -29,7 +29,7 @@ This allows the app to run but won't pass Gatekeeper on other machines:
 
 ```bash
 # Sign the app with ad-hoc signature
-codesign --force --deep --sign - Seq2Vid.app
+codesign --force --deep --sign - FrameStack.app
 ```
 
 ### Option 2: Apple Developer Account ($99/year)
@@ -42,22 +42,17 @@ For proper distribution, you need an Apple Developer account:
    - Create "Developer ID Application" certificate
    - Download and install in Keychain
 
-3. **Update `electron-builder.yml`**:
+3. **Update `src-tauri/tauri.conf.json`**:
 
-```yaml
-mac:
-  category: public.app-category.utilities
-  target:
-    - target: dmg
-      arch:
-        - x64
-        - arm64
-  icon: resources/icon.icns
-  identity: "Developer ID Application: Your Name (TEAM_ID)"
-  hardenedRuntime: true
-  gatekeeperAssess: false
-  entitlements: null
-  entitlementsInherit: null
+```json
+{
+  "bundle": {
+    "macOS": {
+      "signingIdentity": "Developer ID Application: Your Name (TEAM_ID)",
+      "entitlements": null
+    }
+  }
+}
 ```
 
 4. **Set Environment Variables** (if needed):
@@ -71,44 +66,22 @@ export APPLE_TEAM_ID="YOUR_TEAM_ID"
 5. **Rebuild**:
 
 ```bash
-npm run build
-npm run package:mac
+pnpm tauri build
 ```
 
 ### Option 3: Notarization (Required for macOS 10.15+)
 
-After code signing, you should also notarize:
+After code signing, you should also notarize. Set environment variables and build:
 
-```yaml
-mac:
-  # ... other settings ...
-  notarize:
-    teamId: YOUR_TEAM_ID
+```bash
+export APPLE_ID="your@email.com"
+export APPLE_APP_SPECIFIC_PASSWORD="your-app-specific-password"
+export APPLE_TEAM_ID="YOUR_TEAM_ID"
+
+pnpm tauri build
 ```
 
-This requires:
-- Apple Developer account
-- App-specific password (create at appleid.apple.com)
-- Team ID from developer portal
-
-## Quick Fix: Update electron-builder.yml
-
-For now, add this to allow unsigned apps to be distributed (users will still need to bypass Gatekeeper):
-
-```yaml
-mac:
-  category: public.app-category.utilities
-  target:
-    - target: dmg
-      arch:
-        - x64
-        - arm64
-  icon: resources/icon.icns
-  hardenedRuntime: false  # Disable hardened runtime for unsigned apps
-  gatekeeperAssess: false  # Skip Gatekeeper assessment
-  entitlements: null
-  entitlementsInherit: null
-```
+Tauri will automatically notarize the app when these variables are present.
 
 ## Distribution Without Code Signing
 
@@ -120,12 +93,12 @@ If you can't code sign, you can:
 
 2. **Provide clear instructions** in your README:
    ```
-   macOS users: After downloading, right-click Seq2Vid.app and select "Open"
+   macOS users: After downloading, right-click FrameStack.app and select "Open"
    ```
 
 3. **Use Homebrew Cask** (requires code signing):
    - Create a cask formula
-   - Users install via `brew install --cask seq2vid`
+   - Users install via `brew install --cask framestack`
 
 ## Testing
 

@@ -10,7 +10,7 @@ import AboutModal from './components/AboutModal'
 import FFmpegMissingBanner from './components/FFmpegMissingBanner'
 import { useFFmpeg } from './hooks/useFFmpeg'
 import { useJobHistory } from './hooks/useJobHistory'
-import { Film, AlertCircle, CheckCircle2, Info } from 'lucide-react'
+import { Film, AlertCircle, Info } from 'lucide-react'
 
 function App() {
   const [sequenceInfo, setSequenceInfo] = useState<ImageSequenceInfo | null>(null)
@@ -33,7 +33,7 @@ function App() {
     return () => window.removeEventListener('keydown', handleEscape)
   }, [showAbout])
   
-  const { ffmpegAvailable, checking, checkFFmpeg } = useFFmpeg()
+  const { ffmpegAvailable, checking } = useFFmpeg()
   const { jobs, saveJob, refresh: refreshJobHistory } = useJobHistory()
   const formats = getVideoFormats()
 

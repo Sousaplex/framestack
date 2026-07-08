@@ -53,7 +53,6 @@ export default function OutputSettings({
         } catch (error) {
           console.error('Failed to get preferred folder:', error)
           // Fallback to sequence directory
-          const fileName = suggestOutputName(sequenceInfo, format)[0]
           const fullPath = generateOutputPath(sequenceInfo, format)
           onOutputPathChange(fullPath)
         }

@@ -2,10 +2,11 @@
 node_modules/
 
 # Build output
-dist-electron/
+dist/
 out/
 release/
-dist/
+src-tauri/target/
+src-tauri/gen/
 
 # macOS
 .DS_Store
