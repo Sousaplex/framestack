@@ -1,6 +1,20 @@
-# FrameStack - Image Sequence Renderer
+<div align="center">
 
-A Tauri application for converting image sequences to high-quality video formats using FFmpeg.
+<img src="src-tauri/icons/128x128@2x.png" alt="FrameStack icon" width="120" height="120" />
+
+# FrameStack
+
+**Turn image sequences into high-quality video.**
+
+Import PNG / TIFF / EXR / JPEG / DPX frames and render them to ProRes, DNxHD/HR,
+H.264, H.265, CineForm, or AV1 — a fast, native desktop app powered by FFmpeg.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/Sousaplex/framestack/releases)
+[![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8DB.svg?logo=tauri&logoColor=white)](https://tauri.app)
+[![Release](https://img.shields.io/github/v/release/Sousaplex/framestack?include_prereleases&sort=semver)](https://github.com/Sousaplex/framestack/releases)
+
+</div>
 
 ## Features
 
@@ -128,7 +142,7 @@ The app uses:
 
 ## License
 
-MIT
+Released under the [MIT License](LICENSE).
 
 ## Codec Licensing Disclaimer
 
