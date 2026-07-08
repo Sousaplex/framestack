@@ -12,6 +12,21 @@ A Tauri application for converting image sequences to high-quality video formats
 - **File System Navigation**: Easy directory browsing and folder creation
 - **Real-time Progress**: Live progress tracking with frame count, FPS, and ETA
 
+## Download
+
+Grab the latest installer from the [**Releases**](https://github.com/Sousaplex/framestack/releases) page:
+
+- **macOS**: `.dmg` (universal — Apple Silicon + Intel)
+- **Windows**: `.msi` or `.exe`
+
+> **FFmpeg is required** and is not bundled — install it separately (see
+> [Prerequisites](#prerequisites)).
+>
+> These builds are **not code-signed**. On first launch:
+> - **macOS**: right-click the app and choose *Open* (Gatekeeper will otherwise
+>   block an unidentified developer).
+> - **Windows**: on the SmartScreen prompt, click *More info → Run anyway*.
+
 ## Prerequisites
 
 - **FFmpeg**: Must be installed and available in your system PATH
@@ -22,7 +37,7 @@ A Tauri application for converting image sequences to high-quality video formats
 - **Node.js**: Version 18 or higher
 - **Rust**: Required by Tauri. Install via [rustup.rs](https://rustup.rs/)
 
-## Installation
+## Build from Source
 
 1. Install dependencies:
 ```bash
@@ -38,6 +53,10 @@ pnpm tauri dev
 ```bash
 pnpm tauri build
 ```
+
+Production installers are produced under `src-tauri/target/release/bundle/`.
+Releases are built automatically for macOS and Windows by the
+[release workflow](.github/workflows/release.yml) when a `v*` tag is pushed.
 
 ## Usage
 
